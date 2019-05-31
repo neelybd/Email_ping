@@ -25,14 +25,14 @@ def main():
 
 	# Find input file
 	print("Select File in")
-	file_in = askopenfilename(initialdir="../", title="Select file",
+	file_in = askopenfilename(initialdir="../", title="Select input file",
 							  filetypes=(("Comma Separated Values", "*.csv"), ("all files", "*.*")))
 	if not file_in:
 		input("Program Terminated. Press Enter to continue...")
 		exit()
 
 	# Set ouput file
-	file_out = asksaveasfilename(initialdir=file_in, title="Select file",
+	file_out = asksaveasfilename(initialdir=file_in, title="Select output file",
 								 filetypes=(("Comma Separated Values", "*.csv"), ("all files", "*.*")))
 	if not file_out:
 		input("Program Terminated. Press Enter to continue...")
