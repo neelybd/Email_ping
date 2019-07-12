@@ -1,11 +1,12 @@
-import re
-import smtplib
-import dns.resolver
 import pandas as pd
 from tkinter import Tk
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 from joblib import Parallel, delayed
+from email_ping import *
+from unknown_encoding import *
 import multiprocessing
+
+# Unknown Encoder Failure
 
 def main():
 	print("Program: Email Ping")
@@ -40,14 +41,20 @@ def main():
 		input("Program Terminated. Press Enter to continue...")
 		exit()
 
+	# Identify CSV Encoding
+	# encoder = open_unknown_csv(file_in, ",")
+	# if encoder == "Unknown":
+	# 	encoder = encoding_selection("Encoder could not be Identified, please select encoding.")
+	encoder = encoding_selection("Encoder could not be Identified, please select encoding.")
+
 	# Read csv
-	data = pd.read_csv(file_in, low_memory=False)
+	data = pd.read_csv(file_in, low_memory=False, encoding=encoder)
 
 	# Find email column
 	email_col = column_selection(list(data))
 
 	# Test each email address
-	email_list = Parallel(n_jobs=60)(delayed(ping)(i, index) for index, i in enumerate(data[email_col]))
+	email_list = Parallel(n_jobs=60)(delayed(ping, 10)(i, index) for index, i in enumerate(data[email_col]))
 	data["Email Validity"] = email_list
 
 	# Write CSV
@@ -58,70 +65,6 @@ def main():
 
 	print("File written to: " + file_out)
 	input("Press Enter to close...")
-
-def ping(i, index):
-	# print('')
-	if index % 100 == 0:
-		print(str(index) + ": " + str(i))
-	try:
-		return ping_email(i)
-	except:
-		return "Domain Doesn't Exist"
-
-def ping_email(inputAddress):
-	try:
-		# Print what email is being tested
-		# print("Testing: " + inputAddress)
-
-		# Address used for SMTP MAIL FROM command
-		fromAddress = 'noresponse@gmail.com'
-
-		# Simple Regex for syntax checking
-		regex = '^[_a-z0-9-]+(\.[_a-z0-9-]+)*@[a-z0-9-]+(\.[a-z0-9-]+)*(\.[a-z]{2,})$'
-
-		# Email address to verify
-		addressToVerify = str(inputAddress)
-
-		# Lower case address
-		addressToVerify = addressToVerify.lower()
-
-		# Syntax check
-		match = re.match(regex, addressToVerify)
-		if match == None:
-			return 'Bad Syntax'
-
-		# Get domain for DNS lookup
-		splitAddress = addressToVerify.split('@')
-		domain = str(splitAddress[1])
-		# print('Domain:', domain)
-
-		# MX record lookup
-		records = dns.resolver.query(domain, 'MX')
-		mxRecord = records[0].exchange
-		mxRecord = str(mxRecord)
-
-		# SMTP lib setup (use debug level for full output)
-		server = smtplib.SMTP(timeout=360)
-		server.set_debuglevel(0)
-
-		# SMTP Conversation
-		server.connect(mxRecord)
-		server.helo(server.local_hostname) ### server.local_hostname(Get local server hostname)
-		server.mail(fromAddress)
-		code, message = server.rcpt(str(addressToVerify))
-		server.quit()
-
-		#print(code)
-		#print(message)
-
-		# Assume SMTP response 250 is success
-		if code == 250:
-			return 'Success'
-		else:
-			return 'Failed'
-	except:
-		return "Domain Doesn't Exist"
-
 
 def column_selection(headers):
 	while True:
